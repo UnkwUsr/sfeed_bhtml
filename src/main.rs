@@ -1,5 +1,4 @@
 use std::collections::HashSet;
-use std::ffi::OsString;
 use std::fs::{File, OpenOptions};
 use std::io::{self, BufRead, BufReader, Write};
 use std::sync::LazyLock;
@@ -10,21 +9,14 @@ static DONE_READ_PATH: LazyLock<String> = LazyLock::new(|| {
 });
 
 fn main() -> io::Result<()> {
-    let feeds_files: Vec<OsString> = std::env::args_os().skip(1).collect();
-    if feeds_files.is_empty() {
-        // TODO: can just read from stdin. Don't need pass list of files and reading them here
-        eprintln!(
-            "Usage: {} [file ...]",
-            std::env::args().next().unwrap_or_default()
-        );
-        return Ok(());
-    }
-
     let already_read = load_already_read(&DONE_READ_PATH);
-    let new_items: Vec<Item> = read_items_from_files(feeds_files)
-        .into_iter()
-        .filter(|x| !already_read.contains(&x.link))
-        .collect();
+    let new_items: Vec<Item> = {
+        let items = read_items_from_stdin();
+        items
+            .into_iter()
+            .filter(|x| !already_read.contains(&x.link))
+            .collect()
+    };
     let new_done_read = new_items.iter().map(|x| x.link.clone()).collect();
 
     if new_items.is_empty() {
@@ -81,21 +73,16 @@ impl Item {
     }
 }
 
-fn read_items_from_files(feeds_files: Vec<OsString>) -> Vec<Item> {
-    let mut res = Vec::new();
-
-    for file_path in feeds_files {
-        let file = File::open(&file_path).expect(&format!("Can't open feeds file {file_path:?}"));
-
-        for line in BufReader::new(file).lines().filter_map(Result::ok) {
-            match Item::parse_from_line(&line) {
-                Ok(item) => res.push(item),
-                Err(e) => eprintln!("[warn] Parsing error: {e:?} on line {line:?}"),
-            };
-        }
-    }
-
-    res
+fn read_items_from_stdin() -> Vec<Item> {
+    std::io::stdin()
+        .lines()
+        // this will crash on invalid UTF-8, for example
+        .map(|line| line.expect("Error on reading line from stdin"))
+        .flat_map(|line| {
+            Item::parse_from_line(&line)
+                .inspect_err(|e| eprintln!("[warn] Parse error: {e:?} on line {line:?}"))
+        })
+        .collect()
 }
 
 fn write_output(items: &[Item]) -> io::Result<()> {
