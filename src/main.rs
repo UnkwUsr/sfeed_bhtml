@@ -33,15 +33,16 @@ fn main() -> io::Result<()> {
 }
 
 fn load_already_read(path: &str) -> HashSet<String> {
-    if let Ok(f) = File::open(path) {
-        BufReader::new(f)
+    match File::open(path) {
+        Ok(f) => BufReader::new(f)
             .lines()
             .filter_map(Result::ok)
             .filter(|s| !s.is_empty() && !s.starts_with('#'))
-            .collect()
-    } else {
-        eprintln!("[warn] Can't open done_read file. It does not exists yet?");
-        HashSet::default()
+            .collect(),
+        Err(e) => {
+            eprintln!("[warn] Can't open done_read file: {path:?}. Error: {e}");
+            HashSet::default()
+        }
     }
 }
 struct Item {
