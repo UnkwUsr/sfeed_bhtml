@@ -1,6 +1,6 @@
 use std::collections::HashSet;
 use std::fs::{File, OpenOptions};
-use std::io::{self, BufRead, BufReader, Write};
+use std::io::{BufRead, BufReader, Write};
 use std::sync::LazyLock;
 
 static DONE_READ_PATH: LazyLock<String> = LazyLock::new(|| {
@@ -8,7 +8,7 @@ static DONE_READ_PATH: LazyLock<String> = LazyLock::new(|| {
     format!("{home}/.sfeed/done_read")
 });
 
-fn main() -> io::Result<()> {
+fn main() {
     let already_read = load_already_read(&DONE_READ_PATH);
     let new_items: Vec<Item> = {
         let items = read_items_from_stdin();
@@ -20,16 +20,14 @@ fn main() -> io::Result<()> {
 
     if new_items.is_empty() {
         eprintln!("No new unread items");
-        return Ok(());
+        return;
     }
 
-    write_output(&new_items)?;
+    write_output(&new_items);
 
     append_new_done_items(&DONE_READ_PATH, &new_items);
 
     eprintln!("{} new item(s)", new_items.len());
-
-    Ok(())
 }
 
 // TODO: maybe treat as id hash of whole Item
@@ -87,45 +85,51 @@ fn read_items_from_stdin() -> Vec<Item> {
         .collect()
 }
 
-fn write_output(items: &[Item]) -> io::Result<()> {
-    let mut f = std::io::stdout();
+fn write_output(items: &[Item]) {
+    let mut rss_content = items
+        .into_iter()
+        .map(
+            |Item {
+                 title,
+                 link,
+                 content,
+             }| {
+                format!(
+                    r#"<h3><a href=\"{link}\">{title}</a></h3>
+                       <pre>{content}</pre>
+                       <hr>"#
+                )
+            },
+        )
+        .collect::<Vec<String>>()
+        .join("\n");
+    // add style (it will go inside iframe)
+    rss_content.push_str(
+        "<style> body { max-width:900px; margin:2rem auto; }
+                 pre { white-space: pre-wrap }
+         </style>",
+    );
 
-    writeln!(
-        f,
+    println!(
         r#"<!DOCTYPE html>
-<meta charset="utf-8">
-<title>Unread sfeed items</title>
-<body style="max-width:900px; margin:2rem auto; font:1.1rem/1.5 sans-serif;">"#
-    )?;
+           <meta charset="utf-8">
+           <title>Unread sfeed items</title>
+           <body>"#
+    );
 
-    let esc = |s: &str| {
-        s.replace('&', "&amp;")
-            .replace('<', "&lt;")
-            .replace('>', "&gt;")
-    };
+    // put everything in iframe for better isolation (and disable js)
+    // width and height 99% to prevent browser from showing scrollbars in body outside of iframe
+    println!(
+        r#"<iframe sandbox width="99%"
+                    style="position: absolute; height: 99%; border: none"
+                    srcdoc=""#
+    );
+    // the following is content of attribute srcdoc
+    println!("{}", rss_content.replace('"', "&quot;"));
+    // closing srcdoc and iframe
+    println!("\"></iframe>");
 
-    for item in items {
-        writeln!(
-            f,
-            "<h3><a href=\"{}\">{}</a></h3>",
-            esc(&item.link),
-            esc(&item.title)
-        )?;
-
-        if item.content.is_empty() || item.content == "NULL" {
-            writeln!(f, "<p>(no content)</p>")?;
-        } else if item.content.trim_start().starts_with('<') {
-            writeln!(f, "{}", item.content)?;
-        } else {
-            writeln!(f, "<pre>{}</pre>", esc(&item.content))?;
-        }
-
-        writeln!(f, "<hr>")?;
-    }
-
-    writeln!(f, "</body></html>")?;
-
-    Ok(())
+    println!("</body></html>");
 }
 
 fn append_new_done_items(path: &str, done_items: &Vec<Item>) {
