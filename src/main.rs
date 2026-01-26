@@ -37,7 +37,7 @@ fn load_already_read(path: &str) -> HashSet<String> {
         Ok(f) => BufReader::new(f)
             .lines()
             .filter_map(Result::ok)
-            .filter(|s| !s.is_empty() && !s.starts_with('#'))
+            .filter(|s| !s.is_empty())
             .collect(),
         Err(e) => {
             eprintln!("[warn] Can't open done_read file: {path:?}. Error: {e}");
