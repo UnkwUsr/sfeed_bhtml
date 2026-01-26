@@ -79,8 +79,10 @@ impl Item {
 fn read_items_from_stdin() -> Vec<Item> {
     std::io::stdin()
         .lines()
-        // this will crash on invalid UTF-8, for example
-        .map(|line| line.expect("Error on reading line from stdin"))
+        .filter_map(|x| {
+            x.inspect_err(|e| eprintln!("[warn] Skipping invalid line in stdin: {e}"))
+                .ok()
+        })
         .flat_map(|line| {
             Item::parse_from_line(&line)
                 .inspect_err(|e| eprintln!("[warn] Parse error: {e:?} on line {line:?}"))
