@@ -119,14 +119,13 @@ fn write_output(items: &[Item]) {
         r#"<!DOCTYPE html>
            <meta charset="utf-8">
            <title>Unread sfeed items</title>
-           <body>"#
+           <body style="overflow: hidden;">"#
     );
 
     // put everything in iframe for better isolation (and disable js)
-    // width and height 99% to prevent browser from showing scrollbars in body outside of iframe
     println!(
-        r#"<iframe sandbox width="99%"
-                    style="position: absolute; height: 99%; border: none"
+        r#"<iframe sandbox
+                    style="position: absolute; height: 100%; width: 99%; border: none"
                     srcdoc=""#
     );
     // the following is content of attribute srcdoc
