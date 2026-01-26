@@ -32,6 +32,7 @@ fn main() -> io::Result<()> {
     Ok(())
 }
 
+// TODO: maybe treat as id hash of whole Item
 fn load_already_read(path: &str) -> HashSet<String> {
     match File::open(path) {
         Ok(f) => BufReader::new(f)
