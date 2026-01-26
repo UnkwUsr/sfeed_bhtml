@@ -2,10 +2,14 @@ use std::collections::HashSet;
 use std::ffi::OsString;
 use std::fs::{File, OpenOptions};
 use std::io::{self, BufRead, BufReader, Write};
+use std::sync::LazyLock;
+
+static DONE_READ_PATH: LazyLock<String> = LazyLock::new(|| {
+    let home = std::env::var("HOME").expect("HOME env variable is not set");
+    format!("{home}/.sfeed/done_read")
+});
 
 fn main() -> io::Result<()> {
-    let home = std::env::var("HOME").unwrap();
-    let done_path = format!("{home}/.sfeed/done_read");
     let feeds_files: Vec<OsString> = std::env::args_os().skip(1).collect();
     if feeds_files.is_empty() {
         // TODO: can just read from stdin. Don't need pass list of files and reading them here
@@ -16,7 +20,7 @@ fn main() -> io::Result<()> {
         return Ok(());
     }
 
-    let already_read = load_already_read(&done_path);
+    let already_read = load_already_read(&DONE_READ_PATH);
     let new_items: Vec<Item> = read_items_from_files(feeds_files)
         .into_iter()
         .filter(|x| !already_read.contains(&x.link))
@@ -29,7 +33,7 @@ fn main() -> io::Result<()> {
     }
 
     write_output(&new_items)?;
-    append_new_done_read(&done_path, new_done_read);
+    append_new_done_read(&DONE_READ_PATH, new_done_read);
 
     eprintln!("{} new item(s)", new_items.len());
 
