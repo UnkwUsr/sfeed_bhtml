@@ -90,7 +90,7 @@ fn read_items_from_stdin() -> Vec<Item> {
 
 fn write_output(items: &[Item]) {
     let mut rss_content = items
-        .into_iter()
+        .iter()
         .map(
             |Item {
                  title,
@@ -135,8 +135,8 @@ fn write_output(items: &[Item]) {
     println!("</body></html>");
 }
 
-fn append_new_done_items(path: &str, done_items: &Vec<Item>) {
-    let mut done_links: Vec<&str> = done_items.into_iter().map(|x| x.link.as_ref()).collect();
+fn append_new_done_items(path: &str, done_items: &[Item]) {
+    let mut done_links: Vec<&str> = done_items.iter().map(|x| x.link.as_ref()).collect();
 
     // trailing empty line to visually separate newly added dones
     done_links.push("");
@@ -146,7 +146,7 @@ fn append_new_done_items(path: &str, done_items: &Vec<Item>) {
         .append(true)
         .create(true)
         .open(path)
-        .expect("Can't open file with done_read")
+        .expect("Can't open done_read file")
         .write_all(out.as_bytes())
         .expect("Error writing to done_read file");
 }
