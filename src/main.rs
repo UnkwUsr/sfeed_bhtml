@@ -58,6 +58,29 @@ struct Item {
     content: String,
 }
 
+impl Item {
+    fn parse_from_line(line: &str) -> Result<Self, String> {
+        let fields: Vec<&str> = line.split('\t').collect();
+        if fields.len() < 7 {
+            return Err("Not enough fields".into());
+        }
+
+        let _title = fields[1].to_string();
+        let link = fields[2].to_string();
+        let content = fields[3].to_string();
+        let author = fields[6].to_string();
+
+        // TODO: me hack, idk should it be in release or me do something other
+        let title = author;
+
+        Ok(Item {
+            title,
+            link,
+            content,
+        })
+    }
+}
+
 fn read_items_from_files(feeds_files: Vec<OsString>) -> Vec<Item> {
     let mut res = Vec::new();
 
@@ -65,25 +88,10 @@ fn read_items_from_files(feeds_files: Vec<OsString>) -> Vec<Item> {
         let file = File::open(&file_path).expect(&format!("Can't open feeds file {file_path:?}"));
 
         for line in BufReader::new(file).lines().filter_map(Result::ok) {
-            let fields: Vec<&str> = line.split('\t').collect();
-            if fields.len() < 7 {
-                eprintln!("[warn] Invalid line in file {file_path:?}: {line:?}");
-                continue;
-            }
-
-            let _title = fields[1].to_string();
-            let link = fields[2].to_string();
-            let content = fields[3].to_string();
-            let author = fields[6].to_string();
-
-            // TODO: me hack, idk should it be in release or me do something other
-            let title = author;
-
-            res.push(Item {
-                title,
-                link,
-                content,
-            });
+            match Item::parse_from_line(&line) {
+                Ok(item) => res.push(item),
+                Err(e) => eprintln!("[warn] Parsing error: {e:?} on line {line:?}"),
+            };
         }
     }
 
