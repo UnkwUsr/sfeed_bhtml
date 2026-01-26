@@ -17,7 +17,6 @@ fn main() -> io::Result<()> {
             .filter(|x| !already_read.contains(&x.link))
             .collect()
     };
-    let new_done_read = new_items.iter().map(|x| x.link.clone()).collect();
 
     if new_items.is_empty() {
         eprintln!("No new unread items");
@@ -25,7 +24,8 @@ fn main() -> io::Result<()> {
     }
 
     write_output(&new_items)?;
-    append_new_done_read(&DONE_READ_PATH, new_done_read);
+
+    append_new_done_items(&DONE_READ_PATH, &new_items);
 
     eprintln!("{} new item(s)", new_items.len());
 
@@ -126,10 +126,13 @@ fn write_output(items: &[Item]) -> io::Result<()> {
     Ok(())
 }
 
-fn append_new_done_read(path: &str, links: Vec<String>) {
-    let mut out = links.join("\n");
+fn append_new_done_items(path: &str, done_items: &Vec<Item>) {
+    let mut done_links: Vec<&str> = done_items.into_iter().map(|x| x.link.as_ref()).collect();
+
     // trailing empty line to visually separate newly added dones
-    out.push_str("\n\n");
+    done_links.push("");
+
+    let out = done_links.join("\n");
     OpenOptions::new()
         .append(true)
         .create(true)
