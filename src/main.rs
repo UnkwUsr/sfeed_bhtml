@@ -35,7 +35,10 @@ fn load_already_read(path: &str) -> HashSet<String> {
     match File::open(path) {
         Ok(f) => BufReader::new(f)
             .lines()
-            .flatten() // this silently skips all invalid lines (like invalid UTF-8)
+            .filter_map(|x| {
+                x.inspect_err(|e| eprintln!("[warn] Skipping invalid line in done_read file: {e}"))
+                    .ok()
+            })
             .filter(|s| !s.is_empty())
             .collect(),
         Err(e) => {
