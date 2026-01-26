@@ -158,6 +158,7 @@ fn append_new_done_items(path: &str, done_items: &[Item]) {
 
     // trailing empty line to visually separate newly added dones
     done_links.push("");
+    done_links.push("");
 
     let out = done_links.join("\n");
     OpenOptions::new()
