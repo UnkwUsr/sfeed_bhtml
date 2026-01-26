@@ -3,6 +3,8 @@ use std::fs::{File, OpenOptions};
 use std::io::{BufRead, BufReader, Write};
 use std::sync::LazyLock;
 
+use time::UtcDateTime;
+
 static DONE_READ_PATH: LazyLock<String> = LazyLock::new(|| {
     let home = std::env::var("HOME").expect("HOME env variable is not set");
     format!("{home}/.sfeed/done_read")
@@ -48,6 +50,7 @@ fn load_already_read(path: &str) -> HashSet<String> {
     }
 }
 struct Item {
+    timestamp: UtcDateTime,
     title: String,
     link: String,
     content: String,
@@ -60,6 +63,12 @@ impl Item {
             return Err("Not enough fields".into());
         }
 
+        let timestamp = UtcDateTime::from_unix_timestamp(
+            fields[0]
+                .parse::<i64>()
+                .map_err(|e| format!("Parsing timestamp error: {e}"))?,
+        )
+        .map_err(|e| format!("Parsing timestamp error: {e}"))?;
         let _title = fields[1].to_string();
         let link = fields[2].to_string();
         let content = fields[3].to_string();
@@ -69,6 +78,7 @@ impl Item {
         let title = author;
 
         Ok(Item {
+            timestamp,
             title,
             link,
             content,
@@ -84,8 +94,9 @@ fn read_items_from_stdin() -> Vec<Item> {
                 .ok()
         })
         .flat_map(|line| {
-            Item::parse_from_line(&line)
-                .inspect_err(|e| eprintln!("[warn] Parse error: {e:?} on line {line:?}"))
+            Item::parse_from_line(&line).inspect_err(|e| {
+                eprintln!("[warn] Skipping line with parse error: {e:?} on line {line:?}")
+            })
         })
         .collect()
 }
@@ -95,12 +106,14 @@ fn write_output(items: &[Item]) {
         .iter()
         .map(
             |Item {
+                 timestamp,
                  title,
                  link,
                  content,
              }| {
                 format!(
-                    r#"<h3><a href=\"{link}\">{title}</a></h3>
+                    r#"<b><span style="font-size: 20px;"><a href="{link}">{title}</a></span></b>
+                       <span style="font-size: 12px;">{timestamp}</span>
                        <pre>{content}</pre>
                        <hr>"#
                 )
