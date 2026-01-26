@@ -142,7 +142,10 @@ fn write_output(items: &[Item]) {
                     srcdoc=""#
     );
     // the following is content of attribute srcdoc
-    println!("{}", rss_content.replace('"', "&quot;"));
+    println!(
+        "{}",
+        rss_content.replace('&', "&amp;").replace('"', "&quot;")
+    );
     // closing srcdoc and iframe
     println!("\"></iframe>");
 
