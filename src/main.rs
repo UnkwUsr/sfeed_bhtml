@@ -113,8 +113,9 @@ fn write_output(items: &[Item]) {
              }| {
                 format!(
                     r#"<b><span style="font-size: 20px;"><a href="{link}">{title}</a></span></b>
-                       <span style="font-size: 12px;">{timestamp}</span>
-                       <pre>{content}</pre>
+                       <span style="font-size: 12px; line-height: 2;">{timestamp}</span>
+                       <br>
+                       {content}
                        <hr>"#
                 )
             },
