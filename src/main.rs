@@ -49,11 +49,13 @@ fn load_already_read(path: &str) -> HashSet<String> {
         }
     }
 }
+
 struct Item {
     timestamp: UtcDateTime,
     title: String,
     link: String,
     content: String,
+    author: String,
 }
 
 impl Item {
@@ -69,19 +71,17 @@ impl Item {
                 .map_err(|e| format!("Parsing timestamp error: {e}"))?,
         )
         .map_err(|e| format!("Parsing timestamp error: {e}"))?;
-        let _title = fields[1].to_string();
+        let title = fields[1].to_string();
         let link = fields[2].to_string();
         let content = fields[3].to_string();
         let author = fields[6].to_string();
-
-        // TODO: me hack, idk should it be in release or me do something other
-        let title = author;
 
         Ok(Item {
             timestamp,
             title,
             link,
             content,
+            author,
         })
     }
 }
@@ -110,9 +110,11 @@ fn write_output(items: &[Item]) {
                  title,
                  link,
                  content,
+                 author,
              }| {
+                let _ = title; // not used
                 format!(
-                    r#"<b><span style="font-size: 20px;"><a href="{link}">{title}</a></span></b>
+                    r#"<b><span style="font-size: 20px;"><a href="{link}">{author}</a></span></b>
                        <span style="font-size: 12px; line-height: 2;">{timestamp}</span>
                        <br>
                        {content}
