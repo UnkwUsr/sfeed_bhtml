@@ -73,7 +73,7 @@ impl Item {
         .map_err(|e| format!("Parsing timestamp error: {e}"))?;
         let title = fields[1].to_string();
         let link = fields[2].to_string();
-        let content = fields[3].to_string();
+        let content = fields[3].replace("\\n", "\n");
         let author = fields[6].to_string();
 
         Ok(Item {
