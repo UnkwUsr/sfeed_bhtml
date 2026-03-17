@@ -8,7 +8,8 @@ sfeed_update
 
 mkdir -p generated_htmls
 new_res="./generated_htmls/res_$(date +'%Y-%m-%d_%H:%M:%S').html"
-cat ./feeds/* | sfeed_bhtml >> "$new_res"
+# tac - revert lines order, so that feeds will be from oldest to newest
+cat ./feeds/* | tac | sfeed_bhtml >> "$new_res"
 
 # if file is not empty
 if [ -s "$new_res" ]; then
